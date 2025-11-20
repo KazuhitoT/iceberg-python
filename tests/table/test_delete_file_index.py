@@ -37,6 +37,7 @@ from tests.conftest import (
     create_manifest_entry_with_delete_file,
     create_partition_positional_delete_entry,
     create_positional_delete_entry,
+    create_positional_delete_entry_with_referenced_data_file,
 )
 
 
@@ -514,3 +515,24 @@ class TestDeleteFileIndex:
         # Verify that no position deletes are included
         pos_deletes = [d for d in deletes if d.content == DataFileContent.POSITION_DELETES and d.file_format != FileFormat.PUFFIN]
         assert len(pos_deletes) == 1
+
+    def test_referenced_data_file_without_bounds(self, id_data_schema: Schema) -> None:
+        """Test that position deletes with referenced_data_file field (but no bounds) are indexed correctly."""
+        target_file_path = "s3://bucket/data-target.parquet"
+        other_file_path = "s3://bucket/data-other.parquet"
+
+        pos_delete_entry = create_positional_delete_entry_with_referenced_data_file(
+            sequence_number=5, file_path=target_file_path, spec_id=0
+        )
+
+        delete_index = DeleteFileIndex(id_data_schema, {0: PartitionSpec()})
+        delete_index.add_delete_file(pos_delete_entry)
+
+        target_data_file = create_data_file(file_path=target_file_path)
+        target_deletes = delete_index.for_data_file(0, target_data_file)
+        assert len(target_deletes) == 1
+        assert target_deletes[0].file_path == pos_delete_entry.data_file.file_path
+
+        other_data_file = create_data_file(file_path=other_file_path)
+        other_deletes = delete_index.for_data_file(0, other_data_file)
+        assert len(other_deletes) == 0

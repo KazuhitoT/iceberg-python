@@ -3038,6 +3038,26 @@ def create_partition_positional_delete_entry(
     return ManifestEntry.from_args(status=ManifestEntryStatus.DELETED, sequence_number=sequence_number, data_file=delete_file)
 
 
+def create_positional_delete_entry_with_referenced_data_file(
+    sequence_number: int = 1, file_path: str = "s3://bucket/data.parquet", spec_id: int = 0, partition: Optional[Record] = None
+) -> ManifestEntry:
+    """Create a positional delete entry with referenced_data_file field set (for table format version 3)."""
+    delete_file = DataFile.from_args(
+        _table_format_version=3,
+        content=DataFileContent.POSITION_DELETES,
+        file_path=f"s3://bucket/pos-delete-{sequence_number}.parquet",
+        file_format=FileFormat.PARQUET,
+        partition=partition or Record(),
+        record_count=10,
+        file_size_in_bytes=100,
+        referenced_data_file=file_path,
+        # Note: intentionally NOT setting lower_bounds/upper_bounds to test the referenced_data_file path
+    )
+    delete_file._spec_id = spec_id
+
+    return ManifestEntry.from_args(status=ManifestEntryStatus.DELETED, sequence_number=sequence_number, data_file=delete_file)
+
+
 def create_deletion_vector_entry(
     sequence_number: int = 1, file_path: str = "s3://bucket/data.parquet", spec_id: int = 0
 ) -> ManifestEntry:
@@ -3067,6 +3087,8 @@ def create_equality_delete_file(
     upper_bounds: Optional[Dict[int, Any]] = None,
     value_counts: Optional[Dict[int, Any]] = None,
     null_value_counts: Optional[Dict[int, Any]] = None,
+    first_row_id: Optional[int] = None,
+    referenced_data_file: Optional[str] = None,
     spec_id: int = 0,
 ) -> DataFile:
     partition_record = partition
@@ -3082,6 +3104,8 @@ def create_equality_delete_file(
         upper_bounds=upper_bounds,
         value_counts=value_counts,
         null_value_counts=null_value_counts,
+        first_row_id=first_row_id,
+        referenced_data_file=referenced_data_file,
     )
     data_file._spec_id = spec_id
     return data_file
@@ -3096,6 +3120,8 @@ def create_data_file(
     upper_bounds: Optional[Dict[int, Any]] = None,
     value_counts: Optional[Dict[int, Any]] = None,
     null_value_counts: Optional[Dict[int, Any]] = None,
+    first_row_id: Optional[int] = None,
+    referenced_data_file: Optional[str] = None,
     spec_id: int = 0,
 ) -> DataFile:
     # Set default value counts and null value counts if not provided
@@ -3114,6 +3140,8 @@ def create_data_file(
         upper_bounds=upper_bounds,
         value_counts=value_counts,
         null_value_counts=null_value_counts,
+        first_row_id=first_row_id,
+        referenced_data_file=referenced_data_file,
     )
     data_file._spec_id = spec_id
     return data_file

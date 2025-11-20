@@ -515,6 +515,14 @@ class DataFile(Record):
     def sort_order_id(self) -> Optional[int]:
         return self._data[15]
 
+    @property
+    def first_row_id(self) -> Optional[int]:
+        return self._data[16] if len(self._data) > 16 else None
+
+    @property
+    def referenced_data_file(self) -> Optional[str]:
+        return self._data[17] if len(self._data) > 17 else None
+
     # Spec ID should not be stored in the file
     _spec_id: int
 

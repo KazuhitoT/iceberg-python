@@ -442,7 +442,16 @@ class DeleteFileIndex:
         Returns:
             The referenced data file path or None if not available
         """
-        if data_file.content != DataFileContent.POSITION_DELETES or not (data_file.lower_bounds and data_file.upper_bounds):
+        if data_file.content != DataFileContent.POSITION_DELETES:
+            return None
+
+        # First, check the referenced_data_file field (table format v3)
+        referenced_file = data_file.referenced_data_file
+        if referenced_file is not None:
+            return referenced_file
+
+        # Fall back to extracting from bounds (table format v1/v2)
+        if not (data_file.lower_bounds and data_file.upper_bounds):
             return None
 
         lower_bound = data_file.lower_bounds.get(PATH_FIELD_ID)
